@@ -110,10 +110,7 @@
         th { background-color: #f2f2f2; }
     </style>
 </head>
-<body>
-
-    <h1>Canvas Outcomes CSV Generator</h1>
-    
+<body>    
     <div class="app-container">
         
         <div class="form-column">
@@ -122,43 +119,43 @@
                 <div class="form-group">
                     <label class="group-label">Object Type</label>
                     <div class="radio-group">
-						<label class="radio-option">
-                            <input type="radio" name="object_type" value="group">
-                            Outcome Group
-                        </label>
                         <label class="radio-option">
                             <input type="radio" name="object_type" value="outcome" checked>
                             Outcome
+                        </label>
+						<label class="radio-option">
+                            <input type="radio" name="object_type" value="group">
+                            Outcome Group
                         </label>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="group-label" for="title">Title *</label>
+                    <label class="group-label" for="title">Object Name</label>
                     <input type="text" id="title" placeholder="enter the name of your outcome/outcome group" autofocus>
                 </div>
 
                 <div class="form-group">
                     <label class="group-label" for="parent_guids">Parent Group</label>
                     <select id="parent_guids" class="scrollable-list" size="6">
-                        <option value="" selected>None (Top-Level Root)</option>
+                        <option value="" selected>None</option>
                     </select>
                 </div>
 
-                <button type="submit" class="submit-btn">Add to Table</button>
+                <button type="submit" class="submit-btn">Save Outcome</button>
             </form>
             
-            <button type="button" class="download-btn" onclick="downloadCSV()">Download CSV for Canvas</button>
+            <button type="button" class="download-btn" onclick="downloadCSV()">Download CSV File</button>
         </div>
 
         <div class="table-column">
-            <h3>Current Items Queue</h3>
+            <h3>Output</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>Object Type</th>
+                        <th>Object Type (Outcome or Group)</th>
                         <th>Title</th>
-                        <th>Parent Group</th>
+                        <th>Parent Group (if applicable)</th>
                     </tr>
                 </thead>
                 <tbody id="itemTableBody">
