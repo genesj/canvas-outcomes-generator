@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Outcomes CSV Generator</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 40px auto; 
+            max-width: 1200px; 
+            padding: 0 20px; 
+            color: #333; 
+        }
+        h1 { color: #E02229; margin-bottom: 5px; } 
+        p.subtitle { color: #666; margin-top: 0; margin-bottom: 30px; }
+        
+        /* Two-Column Responsive Grid Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+
+        @media (min-width: 768px) {
+            .app-container {
+                grid-template-columns: 400px 1fr;
+            }
+        }
+
+        .form-group { margin-bottom: 20px; }
+        label.group-label { display: block; font-weight: bold; margin-bottom: 8px; }
+        
+        /* Radio Buttons Styling */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .radio-option input {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        input[type="text"] { 
+            width: 100%; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-size: 14px; 
+        }
+        
+        /* Scrollable List Box for Parent Groups */
+        select.scrollable-list { 
+            width: 100%; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-size: 14px; 
+            padding: 5px;
+        }
+        select.scrollable-list option {
+            padding: 8px 10px;
+            border-radius: 2px;
+        }
+
+        .submit-btn { 
+            background-color: #008CBA; 
+            color: white; 
+            padding: 12px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            width: 100%; 
+            font-weight: bold; 
+        }
+        .submit-btn:hover { background-color: #007399; }
+        
+        .download-btn { 
+            background-color: #4CAF50; 
+            margin-top: 25px; 
+            font-weight: bold; 
+            border: none; 
+            color: white; 
+            padding: 14px 15px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            width: 100%; 
+            text-align: center; 
+            display: block; 
+            box-sizing: border-box; 
+        }
+        .download-btn:hover { background-color: #45a049; }
+        
+        /* Table Layout Column */
+        .table-column h3 { margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 14px; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <h1>Canvas Outcomes CSV Generator</h1>
+    
+    <div class="app-container">
+        
+        <div class="form-column">
+            <form id="outcomeForm" onsubmit="handleFormSubmit(event)">
+                
+                <div class="form-group">
+                    <label class="group-label">Object Type</label>
+                    <div class="radio-group">
+						<label class="radio-option">
+                            <input type="radio" name="object_type" value="group">
+                            Outcome Group
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="object_type" value="outcome" checked>
+                            Outcome
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="group-label" for="title">Title *</label>
+                    <input type="text" id="title" placeholder="enter the name of your outcome/outcome group" autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label class="group-label" for="parent_guids">Parent Group</label>
+                    <select id="parent_guids" class="scrollable-list" size="6">
+                        <option value="" selected>None (Top-Level Root)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="submit-btn">Add to Table</button>
+            </form>
+            
+            <button type="button" class="download-btn" onclick="downloadCSV()">Download CSV for Canvas</button>
+        </div>
+
+        <div class="table-column">
+            <h3>Current Items Queue</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Object Type</th>
+                        <th>Title</th>
+                        <th>Parent Group</th>
+                    </tr>
+                </thead>
+                <tbody id="itemTableBody">
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        const records = [];
+
+        function handleFormSubmit(event) {
+            event.preventDefault(); 
+            addItem();
+        }
+
+        function addItem() {
+            const titleInput = document.getElementById('title');
+            const parentGuidsSelect = document.getElementById('parent_guids');
+            
+            // Get value from checked radio button
+            const objectType = document.querySelector('input[name="object_type"]:checked').value;
+            const title = titleInput.value.trim();
+            const parentGuid = parentGuidsSelect.value;
+
+            if (!title) {
+                alert('A Title is required.');
+                return;
+            }
+
+            const record = {
+                vendor_guid: 'id-' + Math.random().toString(36).substr(2, 9), 
+                object_type: objectType,
+                title: title,
+                parent_guids: parentGuid
+            };
+
+            records.push(record);
+            
+            // Rebuild selection window and hold choice position
+            updateListOptions(parentGuid);
+            updateTable();
+            
+            // UI cleanup for next entry
+            titleInput.value = '';
+            titleInput.focus();
+        }
+
+        function updateListOptions(previousSelection) {
+            const listbox = document.getElementById('parent_guids');
+            
+            listbox.innerHTML = '<option value="">None (Top-Level Root)</option>';
+            
+            records.forEach(r => {
+                if (r.object_type === 'group') {
+                    const option = document.createElement('option');
+                    option.value = r.vendor_guid;
+                    option.textContent = r.title;
+                    listbox.appendChild(option);
+                }
+            });
+
+            // Re-apply selection choice automatically if it still exists
+            listbox.value = previousSelection || "";
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('itemTableBody');
+            tbody.innerHTML = '';
+            
+            records.forEach(r => {
+                let parentDisplay = 'None';
+                if (r.parent_guids) {
+                    const matchedParent = records.find(parent => parent.vendor_guid === r.parent_guids);
+                    if (matchedParent) {
+                        parentDisplay = matchedParent.title;
+                    }
+                }
+
+                const row = `<tr>
+                    <td style="text-transform: capitalize;">${r.object_type}</td>
+                    <td>${escapeHtml(r.title)}</td>
+                    <td>${escapeHtml(parentDisplay)}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function downloadCSV() {
+            if (records.length === 0) {
+                alert('Please add at least one item to the table first.');
+                return;
+            }
+
+            const headers = ['vendor_guid', 'object_type', 'title', 'parent_guids'];
+            
+            const csvRows = [
+                headers.join(','), 
+                ...records.map(r => headers.map(header => `"${(r[header] || '').replace(/"/g, '""')}"`).join(','))
+            ];
+
+            const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "canvas_outcomes.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
